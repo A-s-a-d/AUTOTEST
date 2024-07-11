@@ -5,27 +5,30 @@
 #include "UART.h"
 #include "ACUTATOR.h"
 
-#define PH7 "7"
-#define PH10 "10"
 #define PH_HIZ "H1"
 
 class TEST
 {
 private:
+public:
     struct STATE
     {
         enum Num
         {
+            WAITING_FOR_CYCLE_TO_START,
             MOV_ACUTATORS,
             PH_7,
             press_ON_OFF_BUTTON,
             press_SET_BUTTON,
             PH_10,
             HIZ,
-            END_CYCLE
+            END_OF_CYCLE
         };
         Num currentState;
     } STATE;
+
+    const char *PH7 = "7";
+    const char *PH10 = "10";
 
     struct MODE
     {
@@ -35,12 +38,11 @@ private:
         const uint8_t AR1 = 2;
         const uint8_t AR3 = 3;
     } MODE;
-
-public:
     TEST(/* args */);
     void chose_mode();
-    void START_TEST_CYCLE();
-    boolean current_state();
+    void TEST_CYCLE();
+    void start_test_cycle();
+    uint8_t current_state();
 };
 
 extern UART_2 uart2;

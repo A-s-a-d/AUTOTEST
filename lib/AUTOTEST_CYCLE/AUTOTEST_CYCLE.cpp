@@ -10,10 +10,12 @@ void TEST::chose_mode()
 {
 }
 
-void TEST::START_TEST_CYCLE()
+void TEST::TEST_CYCLE()
 {
     switch (STATE.currentState)
     {
+    case STATE::WAITING_FOR_CYCLE_TO_START:
+        break;
     case STATE::MOV_ACUTATORS:
         acutator.move_closer();
         wait(1000);
@@ -26,7 +28,7 @@ void TEST::START_TEST_CYCLE()
            Wait 100ms or just a little.
            Verify PH value by asking the Simulator
         */
-        uart2.write(PH7);
+        uart2.write("7");
         wait(2000);
         STATE.currentState = STATE::press_ON_OFF_BUTTON;
 
@@ -54,9 +56,15 @@ void TEST::START_TEST_CYCLE()
 
     case STATE::HIZ:
         //  code for HIZ state
-        uart2.write(PH_HIZ);
+        uart2.write("H1");
         wait(2000);
-        STATE.currentState = STATE::END_CYCLE;
+        STATE.currentState = STATE::END_OF_CYCLE;
+        break;
+    case STATE::END_OF_CYCLE:
+        uart2.write("7");
+        wait(100);
+        uart2.write("H0");
+        STATE.currentState = STATE::WAITING_FOR_CYCLE_TO_START;
 
         break;
 
@@ -64,7 +72,13 @@ void TEST::START_TEST_CYCLE()
         break;
     }
 }
-boolean TEST::current_state()
+
+void TEST::start_test_cycle()
 {
-    return static_cast<bool>(STATE.currentState);
+    STATE.currentState = STATE.MOV_ACUTATORS;
+}
+
+uint8_t TEST::current_state()
+{
+    return STATE.currentState;
 }

@@ -11,6 +11,7 @@ BUTTON button;
 TEST test;
 ACUTATOR acutator;
 UART_2 uart2;
+boolean reset = 1;
 
 void setup()
 {
@@ -22,20 +23,46 @@ void setup()
 
 void loop()
 {
-  test.chose_mode();
+  // test.chose_mode();
 
-  if (button.process_data() /*| test.current_state()*/) // start button pressed
+  button.update();
+
+  if (stop) // start button pressed
   {
-    test.START_TEST_CYCLE();
+    Serial.println("STOP");
+    reset = 1;
+  }
+  else if (start) // STOP button pressed
+  {
+    Serial.println("START");
+
+    reset = 0;
+  }
+  stop = 0;
+  start = 0;
+
+  if (reset)
+  {
+    Serial.println("reset");
+    reset = 1;
+    // reset
+  }
+  else if (!reset)
+  {
+    Serial.println("test");
+
+    if (test.current_state() == test.STATE.END_OF_CYCLE)
+    {
+      reset = 1;
+    }
+    if (test.current_state() == test.STATE.WAITING_FOR_CYCLE_TO_START)
+    {
+      reset = 0;
+      test.start_test_cycle();
+    }
     Serial.println("SET");
+    test.TEST_CYCLE();
   }
-  else // STOP button pressed
-  {
-    Serial.println("RESET");
-    // Stop or reset test state
-    // Reset variables
-    // Reset positions of actuators
-    // Reset position etc
-  }
+
   delay(1000);
 }

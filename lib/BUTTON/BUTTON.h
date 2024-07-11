@@ -6,13 +6,11 @@
 #define PIN_START 25 // MARCHE
 #define PIN_STOP 26  // ARRET
 
-/* by default STOP button is HIGH and START button is LOW
-when pressed Stop becomes LOW
-when pressed START becomes HIGH
- */
-
 extern volatile boolean START;
 extern volatile boolean STOP;
+
+extern volatile boolean start  ; // Initially true because it's normally closed (HIGH)
+extern volatile boolean stop  ;  // Initially true because it's normally closed (HIGH)
 
 class BUTTON
 {
@@ -23,7 +21,7 @@ private:
 public:
     BUTTON();
     void begin_interruption();
-    boolean process_data();
+    void update();
 };
 
 #endif
