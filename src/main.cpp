@@ -5,11 +5,11 @@
 #include "TIMER_MILLIS.h"
 #include "AUTOTEST_CYCLE.h"
 #include "UART.h"
-#include "ACUTATOR.h"
+
 
 BUTTON button;
 TEST test;
-ACUTATOR acutator;
+
 UART_2 uart2;
 boolean reset = 1;
 

@@ -1,29 +1,29 @@
-#include "ACUTATOR.h"
+#include "P8.h"
 
-ACUTATOR::ACUTATOR(/* args */)
+P8::P8(/* args */)
 {
 }
-void ACUTATOR::move_fwd()
+void P8::move_fwd()
 {
 }
-void ACUTATOR::move_bwd()
+void P8::move_bwd()
 {
 }
-void ACUTATOR::dtct_press()
+void P8::dtct_press()
 {
 }
-void ACUTATOR::dtct_proximity()
+void P8::dtct_proximity()
 {
 }
-void ACUTATOR::move_closer()
+void P8::move_closer()
 {
 }
-void ACUTATOR::press_ONOFF()
+void P8::press_ONOFF()
 {
 }
-void ACUTATOR::press_SET()
+void P8::press_SET()
 {
 }
-void ACUTATOR::press_CAL()
+void P8::press_CAL()
 {
 }

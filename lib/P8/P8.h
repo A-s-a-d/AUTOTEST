@@ -5,6 +5,8 @@
 #include <Wire.h>
 #include <Adafruit_MotorShield.h>
 #include "utility/Adafruit_MS_PWMServoDriver.h"
+#include <Adafruit_I2CDevice.h>
+#include <Adafruit_BusIO_Register.h>
 
 class P8
 {

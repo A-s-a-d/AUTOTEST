@@ -47,6 +47,6 @@ public:
 };
 
 extern UART_2 uart2;
-extern ACUTATOR acutator;
+
 
 #endif

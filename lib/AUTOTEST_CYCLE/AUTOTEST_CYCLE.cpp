@@ -17,7 +17,7 @@ void TEST::TEST_CYCLE()
     case STATE::WAITING_FOR_CYCLE_TO_START:
         break;
     case STATE::MOV_ACUTATORS:
-        acutator.move_closer();
+        //acutator.move_closer
         wait(1000);
         STATE.currentState = STATE::PH_7;
         break;
