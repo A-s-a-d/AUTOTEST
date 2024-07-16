@@ -37,13 +37,14 @@ void TEST::TEST_CYCLE()
     case STATE::press_ON_OFF_BUTTON:
         //  code for press_ON_OFF_BUTTON state
         STATE.currentState = STATE::press_SET_BUTTON;
+        wait(3000);
 
         break;
 
     case STATE::press_SET_BUTTON:
         //  code for press_SET_BUTTON state
         STATE.currentState = STATE::PH_10;
-
+        wait(3000);
         break;
 
     case STATE::PH_10:
@@ -57,10 +58,11 @@ void TEST::TEST_CYCLE()
     case STATE::HIZ:
         //  code for HIZ state
         uart2.write("H1");
-        wait(2000);
+        wait(11000);
         STATE.currentState = STATE::END_OF_CYCLE;
         break;
     case STATE::END_OF_CYCLE:
+        wait(3000);
         uart2.write("7");
         wait(100);
         uart2.write("H0");

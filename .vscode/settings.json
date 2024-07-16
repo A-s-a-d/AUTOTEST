@@ -10,6 +10,9 @@
         "initializer_list": "cpp",
         "functional": "cpp",
         "random": "cpp",
-        "*.tcc": "cpp"
+        "*.tcc": "cpp",
+        "algorithm": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp"
     }
 }

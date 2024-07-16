@@ -3,7 +3,8 @@
 
 #include <Arduino.h>
 #include "UART.h"
-#include "ACUTATOR.h"
+#include "P8.h"
+#include "PQ12.h"
 
 #define PH_HIZ "H1"
 
