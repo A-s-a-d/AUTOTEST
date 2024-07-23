@@ -41,12 +41,13 @@ public:
     } MODE;
     TEST(/* args */);
     void chose_mode();
-    void TEST_CYCLE();
-    void start_test_cycle();
+    void CYCLE();
+    void start_cycle();
+    void end_cycle();
     uint8_t current_state();
+    bool ongoing();
 };
 
 extern UART_2 uart2;
-
 
 #endif

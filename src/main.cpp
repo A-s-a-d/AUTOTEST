@@ -1,10 +1,4 @@
 #include "main.h"
-#include <Arduino.h>
-#include "SCREEN.h"
-#include "BUTTON.h"
-#include "TIMER_MILLIS.h"
-#include "AUTOTEST_CYCLE.h"
-#include "UART.h"
 
 
 BUTTON button;
@@ -12,57 +6,70 @@ TEST test;
 
 UART_2 uart2;
 boolean reset = 1;
+CARTE_AFFICHEUR_H2_AYAC100811_2_I2C display;
+void scanner();
 
 void setup()
 {
+  setCpuFrequencyMhz(240);
   uart2.init();
-  Serial.begin(9600);
-  // uart2.write("ESP32 9600 Bauds, 8bits, 1 Stop, Even parity, LSB first, Inverted\n");
+  Serial.begin(250000);
   button.begin_interruption();
+  Wire.begin();
+  display.begin();
+  display.setcursor(0, 0);
 }
 
 void loop()
 {
-  // test.chose_mode();
+#if debug_loop_timing && debug
+unsigned long Loop_time;
+  debugStartTime(Loop_time);
+#endif
 
+  //* ******************************************** MAIN CODE ******************************************************
   button.update();
 
-  if (stop) // start button pressed
+  if (stop)
   {
-    Serial.println("STOP");
     reset = 1;
+    Serial.print("stop");
   }
-  else if (start) // STOP button pressed
+  else if (start)
   {
-    Serial.println("START");
-
     reset = 0;
+    Serial.print("start");
   }
   stop = 0;
   start = 0;
 
-  if (reset)
+  if (test.current_state() == test.STATE.WAITING_FOR_CYCLE_TO_START && !reset)
   {
-    Serial.println("reset");
-    reset = 1;
-    // reset
+    reset = 0;
+    test.start_cycle();
   }
-  else if (!reset)
+  if (test.ongoing())
   {
-    Serial.println("test");
-
-    if (test.current_state() == test.STATE.END_OF_CYCLE)
+    display.test_ongoing(true);
+    if (stop)
     {
       reset = 1;
     }
-    if (test.current_state() == test.STATE.WAITING_FOR_CYCLE_TO_START)
-    {
-      reset = 0;
-      test.start_test_cycle();
-    }
-    Serial.println("SET");
-    test.TEST_CYCLE();
+  }
+  else
+  {
+    display.test_ongoing(false);
   }
 
-  delay(1000);
+  if (test.current_state() == test.STATE.END_OF_CYCLE)
+  {
+    reset = 1;
+  }
+  test.CYCLE();
+
+  //* ******************************************** MAIN CODE ******************************************************
+
+#if debug_loop_timing & debug
+  debugEndTime(Loop_time);
+#endif
 }

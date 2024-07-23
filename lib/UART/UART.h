@@ -3,10 +3,10 @@
 
 #include <Arduino.h>
 #include "driver/uart.h"
+#include <../pin_out.h>
+
 
 #define UART_NUM UART_NUM_2
-#define TXD_PIN (GPIO_NUM_17)
-#define RXD_PIN (GPIO_NUM_16)
 
 #define carriage_return "\r"
 #define CR carriage_return

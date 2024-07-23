@@ -1,4 +1,7 @@
 #include "BUTTON.h"
+#include "AUTOTEST_CYCLE.h"
+
+extern TEST test;
 
 volatile boolean START_ISR = false;
 volatile boolean STOP_ISR = false; // Initially true because it's normally closed (HIGH)
@@ -26,6 +29,7 @@ void IRAM_ATTR BUTTON::START_pressed_ISR()
 void IRAM_ATTR BUTTON::STOP_pressed_ISR()
 {
     STOP_ISR = 1;
+   test.end_cycle();
 }
 
 void BUTTON::update()

@@ -2,15 +2,13 @@
 #define BUTTON_H
 
 #include <Arduino.h>
-
-#define PIN_START 25 // MARCHE
-#define PIN_STOP 26  // ARRET
+#include <../pin_out.h>
 
 extern volatile boolean START;
 extern volatile boolean STOP;
 
-extern volatile boolean start  ; // Initially true because it's normally closed (HIGH)
-extern volatile boolean stop  ;  // Initially true because it's normally closed (HIGH)
+extern volatile boolean start; // Initially true because it's normally closed (HIGH)
+extern volatile boolean stop;  // Initially true because it's normally closed (HIGH)
 
 class BUTTON
 {
