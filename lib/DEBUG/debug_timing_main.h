@@ -11,8 +11,8 @@ inline void debugStartTime(unsigned long &startLoop_time)
 inline void debugEndTime(unsigned long &startLoop_time)
 {
     unsigned long endLoop = esp_timer_get_time();
-    Serial.println(endLoop - startLoop_time);
-    Serial.print(" µs");
+    Serial.print(endLoop - startLoop_time);
+    Serial.println(" µs");
 }
 
 #endif

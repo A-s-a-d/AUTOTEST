@@ -49,30 +49,49 @@
 
 #define DC 0
 #define STEPPER 1
-#define MOTOR_TYPE 1
+#define MOTOR_TYPE DC
 #define un_used_port 0XFF
 
-#if MOTOR_TYPE == DC
+typedef enum BUTTON_INDEX
+{
+    INDEX_PRIM_DUO_ON_OFF,
+    INDEX_PRIM_DUO_SET,
+    INDEX_PRIM_DUO_CAL,
+    INDEX_PROPILOT_MENU_ESC,
+    INDEX_PROPILOT_SET,
+    INDEX_PROPILOT_UP,
+    INDEX_PROPILOT_DOWN,
+    INDEX_PROPILOT_CAL_OK,
+    INDEX_DUO_ON_OFF_2,
+    INDEX_DUO_SET_2,
+    INDEX_DUO_CAL_2
+} BUTTON_INDEX;
 
+#if MOTOR_TYPE == DC
 #define DRIVER_0 0x60
 #define DRIVER_1 0x61
 #define DRIVER_2 0x62
 
-#define PRIM_DUO_ON_OFF 1
-#define PRIM_DUO_SET 2
-#define PRIM_DUO_CAL 3
-#define PROPILOT_MENU_ESC 4
+#define PORT_PRIM_DUO_ON_OFF 1
+#define PORT_PRIM_DUO_SET 2
+#define PORT_PRIM_DUO_CAL 3
+#define PORT_PROPILOT_MENU_ESC 4
 
-#define PROPILOT_SET 1
-#define PROPILOT_UP 2
-#define PROPILOT_DOWN 3
-#define PROPILOT_CAL_OK 4
+#define PORT_PROPILOT_SET 1
+#define PORT_PROPILOT_UP 2
+#define PORT_PROPILOT_DOWN 3
+#define PORT_PROPILOT_CAL_OK 4
 
-#define DUO_ON_OFF_2 1
-#define DUO_SET_2 2
-#define DUO_CAL_2 3
+#define PORT_DUO_ON_OFF_2 1
+#define PORT_DUO_SET_2 2
+#define PORT_DUO_CAL_2 3
 
-const uint8_t speed = 100; // @param  speed The 8-bit PWM value, 0 is off, 255 is on
+//! We need 20% max duty cycle for PQ12-S model of accutator so 20% of 255 is 51.
+const uint8_t speed = 20; // @param  speed The 8-bit PWM value, 0 is off, 255 is on
+
+//  speed The 16-bit/12bit-real PWM value, 0 is off, 4095 is on full
+//! We need 20% max duty cycle for PQ12-S model of accutator so 20% of 4095 is 819.
+const uint16_t speed_fine = 800;
 
 #elif MOTOR_TYPE == STEPPER
 // TODO if STEPPER MOTOR IS USED
@@ -83,21 +102,21 @@ const uint8_t speed = 100; // @param  speed The 8-bit PWM value, 0 is off, 255 i
 #define DRIVER_4 0x64
 #define DRIVER_5 0x65
 
-#define PRIM_DUO_ON_OFF 1
-#define PRIM_DUO_SET 2
-#define PRIM_DUO_CAL 1
+#define PORT_PRIM_DUO_ON_OFF 1
+#define PORT_PRIM_DUO_SET 2
+#define PORT_PRIM_DUO_CAL 1
 
-#define PROPILOT_MENU_ESC 2
-#define PROPILOT_SET 1
-#define PROPILOT_UP 2
-#define PROPILOT_DOWN 1
-#define PROPILOT_CAL_OK 2
+#define PORT_PROPILOT_MENU_ESC 2
+#define PORT_PROPILOT_SET 1
+#define PORT_PROPILOT_UP 2
+#define PORT_PROPILOT_DOWN 1
+#define PORT_PROPILOT_CAL_OK 2
 
-#define DUO_ON_OFF_2 1
-#define DUO_SET_2 2
-#define DUO_CAL_2 1
+#define PORT_DUO_ON_OFF_2 1
+#define PORT_DUO_SET_2 2
+#define PORT_DUO_CAL_2 1
 uint16_t number_of_steps_16bit = 65535; // verify the that we can put here.
-uint16_t round_per_minute = 65535; // max 65535
+uint16_t round_per_minute = 65535;      // max 65535
 
 #endif
 
@@ -150,7 +169,16 @@ private:
 public:
     DRIVER();
     void begin();
-    /**
+   
+
+#if MOTOR_TYPE == DC
+    void set_speed(uint8_t PWM_duty_cycle_percent); // percent max is 20 limited to 20.
+    void move_fwd(uint8_t button_index);
+    void move_bwd(uint8_t button_index);
+    void release(uint8_t button_index);
+
+#elif MOTOR_TYPE == STEPPER
+ /**
      * @brief
      *
      * @param steps is how many steps you'd like it to take.
@@ -165,11 +193,11 @@ public:
      *  steptype->`"Microstepping"` is a method where the coils are PWM'd to create smooth motion between steps.
      */
     void step(uint16_t steps, uint8_t direction, uint8_t steptype);
-    void move_fwd_single(uint16_t steps);
-    void move_bwd_single(uint16_t steps);
+    void move_fwd(uint16_t steps_speed);
+    void move_bwd(uint16_t steps_speed);
 
+#endif
     void move_closer();
-
     void press_ONOFF();
     void press_SET();
     void press_CAL();

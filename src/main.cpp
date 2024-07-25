@@ -1,5 +1,5 @@
 #include "main.h"
-
+#include "DRIVER.h"
 
 BUTTON button;
 TEST test;
@@ -7,7 +7,7 @@ TEST test;
 UART_2 uart2;
 boolean reset = 1;
 CARTE_AFFICHEUR_H2_AYAC100811_2_I2C display;
-void scanner();
+DRIVER driver;
 
 void setup()
 {
@@ -16,18 +16,54 @@ void setup()
   Serial.begin(250000);
   button.begin_interruption();
   Wire.begin();
+
+  driver.begin();
+  driver.release(0);
+  delay(5);
+  driver.move_bwd(0);
+  delay(3000);
+  driver.release(0);
+
   display.begin();
   display.setcursor(0, 0);
+
+  display.clear();
 }
 
 void loop()
 {
-#if debug_loop_timing && debug
-unsigned long Loop_time;
-  debugStartTime(Loop_time);
+#define TEST_ALLOW 1
+#if TEST_ALLOW
+#define MAIN_ALLOW 0
+#else
+#define MAIN_ALLOW 1
 #endif
 
+#if debug_loop_timing && debug
+  unsigned long Loop_time;
+  debugStartTime(Loop_time);
+#endif
+// !  ******************************************** TEST PROGRAM HERE **********************************************
+#if TEST_ALLOW
+#define timemov 500
+#define timestall 2000
+
+  driver.move_fwd(0);
+  delay(timemov);
+  driver.release(0);
+  delay(timestall);
+  driver.move_bwd(0);
+  delay(timemov);
+  driver.release(0);
+  delay(timestall);
+
+#endif
+
+  // !  ******************************************** TEST PROGRAM HERE **********************************************
+
   //* ******************************************** MAIN CODE ******************************************************
+#if MAIN_ALLOW
+
   button.update();
 
   if (stop)
@@ -67,6 +103,7 @@ unsigned long Loop_time;
   }
   test.CYCLE();
 
+#endif
   //* ******************************************** MAIN CODE ******************************************************
 
 #if debug_loop_timing & debug
