@@ -32,6 +32,7 @@
  * TODO Associate each port to each button that needs to be pressed.
  * TODO Press function
  * TODO UNPRESS function
+ * also @see https://learn.adafruit.com/adafruit-motor-shield-v2-for-arduino/stacking-shields for how to stack the Driver sheilds
  *
  */
 
@@ -46,48 +47,132 @@
 #include <Adafruit_BusIO_Register.h>
 #include "global.h"
 
-#define DC 0;
-#define STEPPER 1;
-#define MOTOR_TYPE DC;
+#define DC 0
+#define STEPPER 1
+#define MOTOR_TYPE 1
+#define un_used_port 0XFF
 
-#if !MOTOR_TYPE
-#define get(port) getMotor(port)
-typedef struct data
-{
-    const uint8_t speed = 100;
-    const uint8_t port = 1;
-} data;
-#endif
+#if MOTOR_TYPE == DC
 
-#if MOTOR_TYPE
-#define get(port) getStepper(port)
-typedef struct data
-{
-    const uint16_t steps = 200;
-    const uint8_t port = 2;
-    const uint8_t rpm = 100;
-} data;
+#define DRIVER_0 0x60
+#define DRIVER_1 0x61
+#define DRIVER_2 0x62
+
+#define PRIM_DUO_ON_OFF 1
+#define PRIM_DUO_SET 2
+#define PRIM_DUO_CAL 3
+#define PROPILOT_MENU_ESC 4
+
+#define PROPILOT_SET 1
+#define PROPILOT_UP 2
+#define PROPILOT_DOWN 3
+#define PROPILOT_CAL_OK 4
+
+#define DUO_ON_OFF_2 1
+#define DUO_SET_2 2
+#define DUO_CAL_2 3
+
+const uint8_t speed = 100; // @param  speed The 8-bit PWM value, 0 is off, 255 is on
+
+#elif MOTOR_TYPE == STEPPER
+// TODO if STEPPER MOTOR IS USED
+#define DRIVER_0 0x60
+#define DRIVER_1 0x61
+#define DRIVER_2 0x62
+#define DRIVER_3 0x63
+#define DRIVER_4 0x64
+#define DRIVER_5 0x65
+
+#define PRIM_DUO_ON_OFF 1
+#define PRIM_DUO_SET 2
+#define PRIM_DUO_CAL 1
+
+#define PROPILOT_MENU_ESC 2
+#define PROPILOT_SET 1
+#define PROPILOT_UP 2
+#define PROPILOT_DOWN 1
+#define PROPILOT_CAL_OK 2
+
+#define DUO_ON_OFF_2 1
+#define DUO_SET_2 2
+#define DUO_CAL_2 1
+uint16_t number_of_steps_16bit = 65535; // verify the that we can put here.
+uint16_t round_per_minute = 65535; // max 65535
+
 #endif
 
 class DRIVER
 {
 private:
-    data _data;
+#if MOTOR_TYPE == DC
+    // Motor shield instances
+    Adafruit_MotorShield AFMS_0;
+    Adafruit_MotorShield AFMS_1;
+    Adafruit_MotorShield AFMS_2;
 
-    Adafruit_MotorShield AFMS = Adafruit_MotorShield();
-    Adafruit_DCMotor *myMotor = AFMS.get(_data.port);
+    Adafruit_DCMotor *MOTOR_PRIM_DUO_ON_OFF;
+    Adafruit_DCMotor *MOTOR_PRIM_DUO_SET;
+    Adafruit_DCMotor *MOTOR_PRIM_DUO_CAL;
+    Adafruit_DCMotor *MOTOR_PROPILOT_MENU_ESC;
+    Adafruit_DCMotor *MOTOR_PROPILOT_SET;
+    Adafruit_DCMotor *MOTOR_PROPILOT_UP;
+    Adafruit_DCMotor *MOTOR_PROPILOT_DOWN;
+    Adafruit_DCMotor *MOTOR_PROPILOT_CAL_OK;
+    Adafruit_DCMotor *MOTOR_DUO_ON_OFF_2;
+    Adafruit_DCMotor *MOTOR_DUO_SET_2;
+    Adafruit_DCMotor *MOTOR_DUO_CAL_2;
+
+#elif MOTOR_TYPE == STEPPER
+
+    Adafruit_MotorShield AFMS_0;
+    Adafruit_MotorShield AFMS_1;
+    Adafruit_MotorShield AFMS_2;
+    Adafruit_MotorShield AFMS_3;
+    Adafruit_MotorShield AFMS_4;
+    Adafruit_MotorShield AFMS_5;
+
+    Adafruit_StepperMotor *MOTOR_PRIM_DUO_ON_OFF;
+    Adafruit_StepperMotor *MOTOR_PRIM_DUO_SET;
+    Adafruit_StepperMotor *MOTOR_PRIM_DUO_CAL;
+    Adafruit_StepperMotor *MOTOR_PROPILOT_MENU_ESC;
+    Adafruit_StepperMotor *MOTOR_PROPILOT_SET;
+    Adafruit_StepperMotor *MOTOR_PROPILOT_UP;
+    Adafruit_StepperMotor *MOTOR_PROPILOT_DOWN;
+    Adafruit_StepperMotor *MOTOR_PROPILOT_CAL_OK;
+    Adafruit_StepperMotor *MOTOR_DUO_ON_OFF_2;
+    Adafruit_StepperMotor *MOTOR_DUO_SET_2;
+    Adafruit_StepperMotor *MOTOR_DUO_CAL_2;
+
+#endif
+
+    // Motor instances
 
 public:
-    DRIVER(/* args */);
+    DRIVER();
     void begin();
-    void move_fwd();
-    void move_bwd();
-    void dtct_press();
-    void dtct_proximity();
+    /**
+     * @brief
+     *
+     * @param steps is how many steps you'd like it to take.
+     * @param direction is either FORWARD or BACKWARD
+     * @param steptype step type is SINGLE, DOUBLE, INTERLEAVE or MICROSTEP. \n
+     *  steptype->`"Single" `means single-coil activation;
+     *
+     *  steptype->`"Double"` means 2 coils are activated at once (for higher torque)  \n
+     *
+     *  steptype->`"Interleave"` means that it alternates between single and double to get twice the resolution (but of course its half the speed).  \n
+     *
+     *  steptype->`"Microstepping"` is a method where the coils are PWM'd to create smooth motion between steps.
+     */
+    void step(uint16_t steps, uint8_t direction, uint8_t steptype);
+    void move_fwd_single(uint16_t steps);
+    void move_bwd_single(uint16_t steps);
+
     void move_closer();
+
     void press_ONOFF();
     void press_SET();
     void press_CAL();
 };
 
-#endif
+#endif // DRIVER_H
