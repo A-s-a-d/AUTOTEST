@@ -12,26 +12,23 @@ DRIVER driver;
 void setup()
 {
   setCpuFrequencyMhz(240);
-  uart2.init();
-  Serial.begin(250000);
-  button.begin_interruption();
   Wire.begin();
-
+  uart2.init();
+  Serial.begin(9600);
+  button.begin_interruption();
   driver.begin();
-  driver.release(0);
-  delay(5);
-  driver.move_bwd(0);
-  delay(3000);
-  driver.release(0);
 
   display.begin();
   display.setcursor(0, 0);
-
   display.clear();
+  Serial.print("setup");
+
+  driver.reset_position(); // must be after chosing the device.
 }
 
 void loop()
 {
+
 #define TEST_ALLOW 1
 #if TEST_ALLOW
 #define MAIN_ALLOW 0
@@ -45,17 +42,8 @@ void loop()
 #endif
 // !  ******************************************** TEST PROGRAM HERE **********************************************
 #if TEST_ALLOW
-#define timemov 500
-#define timestall 2000
 
-  driver.move_fwd(0);
-  delay(timemov);
-  driver.release(0);
-  delay(timestall);
-  driver.move_bwd(0);
-  delay(timemov);
-  driver.release(0);
-  delay(timestall);
+  driver.move_close(0); // Example button ID 1
 
 #endif
 
@@ -102,7 +90,6 @@ void loop()
     reset = 1;
   }
   test.CYCLE();
-
 #endif
   //* ******************************************** MAIN CODE ******************************************************
 

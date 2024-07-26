@@ -67,6 +67,40 @@ typedef enum BUTTON_INDEX
     INDEX_DUO_CAL_2
 } BUTTON_INDEX;
 
+// Define states for the state machines
+enum BUTTON_STATE
+{
+
+    POS_0_IDLE,
+
+    MOVE_FWD_CLOSE,
+    MOVE_CLOSE_DONE,
+
+    READY_TO_PRESS,
+
+    PRESS_BUTTON_SLOW,
+    WAIT_PRESS,
+    PRESSED,
+
+    PRESS_BUTTON_UNPRESS,
+    WAIT_UNPRESS,
+
+    UNPRESSED, // return to READY_to_PRESS after this unless otherwise needed
+
+    RETURN_POS_0
+};
+
+typedef struct MoveTask
+{
+    uint8_t current_state;
+    uint8_t button;
+
+    unsigned long startTime_move_fwd_fast;
+    unsigned long startTime_press;
+    unsigned long startTime_unpress;
+
+} MoveTask;
+
 #if MOTOR_TYPE == DC
 #define DRIVER_0 0x60
 #define DRIVER_1 0x61
@@ -164,21 +198,27 @@ private:
 
 #endif
 
-    // Motor instances
+    uint8_t _current_speed_percent;
+    // Global variables to hold the state and timing information
+    MoveTask task_BUTTON[11];
 
 public:
     DRIVER();
     void begin();
-   
 
 #if MOTOR_TYPE == DC
-    void set_speed(uint8_t PWM_duty_cycle_percent); // percent max is 20 limited to 20.
+
+    void set_speed(uint8_t PWM_duty_cycle_percent);
     void move_fwd(uint8_t button_index);
     void move_bwd(uint8_t button_index);
     void release(uint8_t button_index);
+    void reset_position();
+
+    void move_close(uint8_t button);
+    void press_button(uint8_t button);
 
 #elif MOTOR_TYPE == STEPPER
- /**
+    /**
      * @brief
      *
      * @param steps is how many steps you'd like it to take.
@@ -197,6 +237,7 @@ public:
     void move_bwd(uint16_t steps_speed);
 
 #endif
+
     void move_closer();
     void press_ONOFF();
     void press_SET();
