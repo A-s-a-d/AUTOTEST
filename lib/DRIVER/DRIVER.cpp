@@ -1,4 +1,3 @@
-
 #include "DRIVER.h"
 
 DRIVER::DRIVER() :
@@ -8,48 +7,69 @@ DRIVER::DRIVER() :
                    AFMS_0(DRIVER_0), AFMS_1(DRIVER_1), AFMS_2(DRIVER_2), AFMS_3(DRIVER_3), AFMS_4(DRIVER_4), AFMS_5(DRIVER_5)
 #endif
 {
-    for (uint8_t i = 0; i <= 11; i++)
+    for (uint8_t i = 0; i < 11; i++)
     {
-        task_BUTTON[11].button = i;
+        task_BUTTON[i].button = i;
+        task_BUTTON[i].current_state = 0;
     }
     _current_speed_percent = 0;
+}
+
+boolean DRIVER::scan_for_driver(uint8_t adress)
+{
+    byte error;
+    Wire.beginTransmission(adress);
+    error = Wire.endTransmission();
+    if (error == 0)
+    {
+        return true;
+    }
+    return false;
 }
 
 void DRIVER::begin()
 {
 #if MOTOR_TYPE == DC
-    Serial.println(myDEVICE.Device_ID);
-    if (myDEVICE.Device_ID == PRIM)
+
+    for (uint8_t i = 0; !driver_present.AFMS_0_Present && (i <= 5); i++)
     {
         MOTOR_PRIM_DUO_ON_OFF = AFMS_0.getMotor(PORT_PRIM_DUO_ON_OFF);
         MOTOR_PRIM_DUO_SET = AFMS_0.getMotor(PORT_PRIM_DUO_SET);
         MOTOR_PRIM_DUO_CAL = AFMS_0.getMotor(PORT_PRIM_DUO_CAL);
-        AFMS_0.begin();
-    }
-    else if (myDEVICE.Device_ID == PROPILOT)
-    {
         MOTOR_PROPILOT_MENU_ESC = AFMS_0.getMotor(PORT_PROPILOT_MENU_ESC);
+        if (scan_for_driver(DRIVER_0) == true)
+        {
+            driver_present.AFMS_0_Present = true;
+            AFMS_0.begin();
+        }
+    }
 
+    for (uint8_t i = 0, j = 0, k = 0; !driver_present.AFMS_1_Present && (i < 5); ++i)
+    {
         MOTOR_PROPILOT_SET = AFMS_1.getMotor(PORT_PROPILOT_SET);
         MOTOR_PROPILOT_UP = AFMS_1.getMotor(PORT_PROPILOT_UP);
         MOTOR_PROPILOT_DOWN = AFMS_1.getMotor(PORT_PROPILOT_DOWN);
         MOTOR_PROPILOT_CAL_OK = AFMS_1.getMotor(PORT_PROPILOT_CAL_OK);
-        AFMS_0.begin();
-        AFMS_1.begin();
+        if (scan_for_driver(DRIVER_1) == true)
+        {
+            driver_present.AFMS_1_Present = true;
+            AFMS_1.begin();
+        }
     }
-    else if (myDEVICE.Device_ID == DUO)
+
+    for (uint8_t i = 0, j = 0, k = 0; !driver_present.AFMS_2_Present && (i < 5); ++i)
     {
-        MOTOR_PRIM_DUO_ON_OFF = AFMS_0.getMotor(PORT_PRIM_DUO_ON_OFF);
-        MOTOR_PRIM_DUO_SET = AFMS_0.getMotor(PORT_PRIM_DUO_SET);
-        MOTOR_PRIM_DUO_CAL = AFMS_0.getMotor(PORT_PRIM_DUO_CAL);
         MOTOR_DUO_ON_OFF_2 = AFMS_2.getMotor(PORT_DUO_ON_OFF_2);
         MOTOR_DUO_SET_2 = AFMS_2.getMotor(PORT_DUO_SET_2);
         MOTOR_DUO_CAL_2 = AFMS_2.getMotor(PORT_DUO_CAL_2);
-        AFMS_0.begin();
-        AFMS_2.begin();
+        if (scan_for_driver(DRIVER_2) == true)
+        {
+            driver_present.AFMS_2_Present = true;
+            AFMS_2.begin();
+        }
     }
 
-    // reset_position_ALL();
+    reset_position();
 
 #elif MOTOR_TYPE == STEPPER
     MOTOR_PRIM_DUO_ON_OFF = AFMS_0.getStepper(number_of_steps_16bit, PRIM_DUO_ON_OFF);
@@ -169,17 +189,16 @@ void DRIVER::move_bwd(uint8_t button_index)
     case BUTTON_INDEX::INDEX_PRIM_DUO_ON_OFF:
         MOTOR_PRIM_DUO_ON_OFF->run(DIRECTION);
         break;
-
     case BUTTON_INDEX::INDEX_PRIM_DUO_SET:
         MOTOR_PRIM_DUO_SET->run(DIRECTION);
         break;
-
     case BUTTON_INDEX::INDEX_PRIM_DUO_CAL:
         MOTOR_PRIM_DUO_CAL->run(DIRECTION);
         break;
     case BUTTON_INDEX::INDEX_PROPILOT_MENU_ESC:
         MOTOR_PROPILOT_MENU_ESC->run(DIRECTION);
         break;
+
     case BUTTON_INDEX::INDEX_PROPILOT_SET:
         MOTOR_PROPILOT_SET->run(DIRECTION);
         break;
@@ -192,6 +211,7 @@ void DRIVER::move_bwd(uint8_t button_index)
     case BUTTON_INDEX::INDEX_PROPILOT_CAL_OK:
         MOTOR_PROPILOT_CAL_OK->run(DIRECTION);
         break;
+
     case BUTTON_INDEX::INDEX_DUO_ON_OFF_2:
         MOTOR_DUO_ON_OFF_2->run(DIRECTION);
         break;
@@ -253,179 +273,154 @@ void DRIVER::release(uint8_t button_index)
 
 void DRIVER::reset_position()
 {
+
+    const uint8_t time_delay = 200;
     set_speed(100 /* % percent*/);
-    if (myDEVICE.Device_ID == PRIM)
+    if (driver_present.AFMS_0_Present)
     {
-        for (uint8_t i = INDEX_PRIM_DUO_ON_OFF; i <= INDEX_PRIM_DUO_CAL; i++)
+        for (uint8_t i = 0; i <= 3; i++)
         {
             release(i);
             delay(5);
             move_bwd(i);
-            delay(500);
+            delay(time_delay);
         }
     }
-    else if (myDEVICE.Device_ID == PROPILOT)
+    if (driver_present.AFMS_1_Present)
     {
-        for (uint8_t i = INDEX_PROPILOT_MENU_ESC; i <= INDEX_PROPILOT_CAL_OK; i++)
+        for (uint8_t i = 4; i <= 7; i++)
         {
             release(i);
             delay(5);
             move_bwd(i);
-            delay(500);
+            delay(time_delay);
         }
     }
-    else if (myDEVICE.Device_ID == DUO)
+    if (driver_present.AFMS_2_Present)
     {
-        for (uint8_t i = INDEX_DUO_ON_OFF_2; i <= INDEX_DUO_CAL_2; i++)
+        for (uint8_t i = 8; i <= 11; i++)
         {
             release(i);
             delay(5);
             move_bwd(i);
-            delay(500);
+            delay(time_delay);
         }
     }
+    Serial.println("ACUTATOR POSITION RESET");
 }
 
 void DRIVER::move_close(uint8_t button)
 {
-
-    switch (task_BUTTON[button].current_state)
+    // TODO move all acutators closer here.
+    // TODO implement the waiting for test to start, and when the test starts go to next step;
+    if (/*test started*/ 1)
     {
-    case POS_0_IDLE:
-
-        // TODO implement the waiting for test to start, and when the test starts go to next step;
-        if (/*test started*/ 1)
-        {
-        }
-        task_BUTTON[button].current_state = MOVE_FWD_CLOSE;
-        break;
-    case MOVE_FWD_CLOSE:
-        set_speed(100);
-
-        task_BUTTON[button].startTime_move_fwd_fast = millis();
-        move_fwd(button);
-        if (millis() - task_BUTTON[button].startTime_move_fwd_fast >= 120)
-        { // 150ms for half distance
-            release(button);
-            task_BUTTON[button].current_state = MOVE_CLOSE_DONE;
-        }
-        break;
-    case MOVE_CLOSE_DONE:
-        release(button);
-        set_speed(50);
-        task_BUTTON[button].current_state = READY_TO_PRESS;
-        break;
-    case READY_TO_PRESS:
-        task_BUTTON[button].current_state = PRESS_BUTTON_SLOW;
-        break;
-    case PRESS_BUTTON_SLOW:
-        task_BUTTON[button].current_state = WAIT_PRESS;
-        break;
-    case WAIT_PRESS:
-        task_BUTTON[button].current_state = PRESSED;
-        break;
-    case PRESSED:
-        task_BUTTON[button].current_state = PRESS_BUTTON_UNPRESS;
-        break;
-    case PRESS_BUTTON_UNPRESS:
-        task_BUTTON[button].current_state = WAIT_UNPRESS;
-        break;
-    case WAIT_UNPRESS:
-        task_BUTTON[button].current_state = UNPRESSED;
-        break;
-    case UNPRESSED:
-        task_BUTTON[button].current_state = WAIT_UNPRESS;
-        break;
-    case RETURN_POS_0:
-        task_BUTTON[button].current_state = POS_0_IDLE;
-        break;
     }
+
+    task_BUTTON[button].current_state = MOVE_FWD_CLOSE;
 }
 
 void DRIVER::press_button(uint8_t button)
 {
-    // const uint16_t timemovfwdms = 150;
-    // const uint16_t timemovbwdms = 150;
-    // const uint16_t timewait_press = 500;
+    task_BUTTON[button].current_state = PRESS_BUTTON_SLOW;
+}
 
-    // move_fwd(BUTTON);
-    // delay(timemovfwdms); //* move fwd fast
-
-    // release(BUTTON);
-    // delay(1000);
-
-    // set_speed(40);
-    // move_fwd(BUTTON);
-    // delay(timewait_press); //* move fwd slow press wait
-
-    // release(BUTTON);
-    // delay(200); //* move bwd slow unpress wait
-
-    // move_bwd(BUTTON);
-    // delay(timewait_press); //* move bwd slow unpress wait
-    // release(BUTTON);
-    // delay(1000);
-
-    // set_speed(100);
-    // move_bwd(BUTTON);
-    // delay(timemovbwdms); //* move bwd fast unpress
-
-    // release(BUTTON);
-
-        switch (pressButtonTask.state)
+void DRIVER::ACUTATOR_cycle(uint8_t button)
+{
+    Serial.println(task_BUTTON[button].current_state);
+    switch (task_BUTTON[button].current_state)
     {
-    case PRESS_BUTTON_IDLE:
-        pressButtonTask.state = PRESS_BUTTON_MOVING_FWD;
-        pressButtonTask.startTime = millis();
-        pressButtonTask.button = button;
+        //* ***************************************************************** case POS_0_IDLE ************************************************
+    case POS_0_IDLE:
+
+        break;
+        //* ***************************************************************** case MOVE_FWD_CLOSE ************************************************
+    case MOVE_FWD_CLOSE:
+        set_speed(100);
+        static unsigned long startTime_move_fwd_fast = millis();
+        move_fwd(button); // Ensure this function is non-blocking
+
+        // Check elapsed time
+        if (millis() - startTime_move_fwd_fast >= 480 /* ms*/)
+        {
+            Serial.println();
+            release(button);
+            task_BUTTON[button].current_state = MOVE_CLOSE_DONE;
+            // Reset startTime if needed, or perform any necessary cleanup
+            startTime_move_fwd_fast = 0;
+        }
+        break;
+
+        //* ***************************************************************** case MOVE_CLOSE_DONE ************************************************
+    case MOVE_CLOSE_DONE:
+        set_speed(60);
+        task_BUTTON[button].current_state = READY_TO_PRESS;
+        break;
+
+        //* ***************************************************************** case READY_TO_PRESS ************************************************
+    case READY_TO_PRESS:
+        Serial.println("here----------");
+        break;
+        //* ***************************************************************** case PRESS_BUTTON_SLOW ************************************************
+    case PRESS_BUTTON_SLOW:
+        if (task_BUTTON[button].startTime_press == 0)
+        {
+            task_BUTTON[button].startTime_press = millis();
+        }
         move_fwd(button);
-        break;
-
-    case PRESS_BUTTON_MOVING_FWD:
-        if (millis() - pressButtonTask.startTime >= 150)
-        { // 150ms forward
-            release(pressButtonTask.button);
-            pressButtonTask.state = PRESS_BUTTON_WAIT;
-            pressButtonTask.startTime = millis();
+        if (millis() - task_BUTTON[button].startTime_press >= 400)
+        {
+            release(button); // maybe doesent need to release to keep the force.
+            task_BUTTON[button].current_state = PRESSED;
+            task_BUTTON[button].startTime_press = 0;
         }
         break;
 
-    case PRESS_BUTTON_WAIT:
-        if (millis() - pressButtonTask.startTime >= 1000)
-        { // Wait 1000ms
-            set_speed(40);
-            move_fwd(pressButtonTask.button);
-            pressButtonTask.state = PRESS_BUTTON_RELEASE;
-            pressButtonTask.startTime = millis();
-        }
-        break;
+        //* ***************************************************************** case PRESS_BUTTON_SLOW ************************************************
 
-    case PRESS_BUTTON_RELEASE:
-        if (millis() - pressButtonTask.startTime >= 500)
+        //* ***************************************************************** case PRESSED ************************************************
+    case PRESSED:
+
+        if (task_BUTTON[button].release_time == 0)
+        {
+            task_BUTTON[button].release_time = millis();
+        }
+        if (millis() - task_BUTTON[button].release_time >= 200)
         { // Press button 500ms
-            release(pressButtonTask.button);
-            move_bwd(pressButtonTask.button);
-            pressButtonTask.state = PRESS_BUTTON_MOVING_BWD;
-            pressButtonTask.startTime = millis();
+            task_BUTTON[button].release_time = 0;
+            task_BUTTON[button].current_state = BUTTON_UNPRESS;
         }
         break;
 
-    case PRESS_BUTTON_MOVING_BWD:
-        if (millis() - pressButtonTask.startTime >= 500)
-        { // 500ms backward
-            release(pressButtonTask.button);
-            set_speed(100);
-            pressButtonTask.state = PRESS_BUTTON_DONE;
-            pressButtonTask.startTime = millis();
+        //* ***************************************************************** case PRESS_BUTTON_UNPRESS ************************************************
+    case BUTTON_UNPRESS:
+        if (task_BUTTON[button].time_unpress == 0)
+        {
+            task_BUTTON[button].time_unpress = millis();
+        }
+        move_bwd(button);
+
+        release(button);
+        if (millis() - task_BUTTON[button].time_unpress >= 30)
+        {
+            task_BUTTON[button].time_unpress = 0;
+            release(button); // maybe doesent need to release to keep the force.
+            task_BUTTON[button].current_state = UNPRESSED;
         }
         break;
 
-    case PRESS_BUTTON_DONE:
-        if (millis() - pressButtonTask.startTime >= 150)
-        { // Final backward 150ms
-            release(pressButtonTask.button);
-            pressButtonTask.state = PRESS_BUTTON_IDLE;
-        }
+        //* ***************************************************************** case BUTTON_UNPRESS ************************************************
+
+        //* ***************************************************************** case UNPRESSED ************************************************
+    case UNPRESSED:
+        task_BUTTON[button].current_state = READY_TO_PRESS; //? return to ready to be pressed?
+        break;
+
+        //* ***************************************************************** case RETURN_POS_0 ************************************************
+    case RETURN_POS_0:
+        set_speed(100);
+        task_BUTTON[button].current_state = POS_0_IDLE;
+
         break;
     }
 }

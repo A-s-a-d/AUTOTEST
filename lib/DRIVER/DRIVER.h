@@ -79,10 +79,9 @@ enum BUTTON_STATE
     READY_TO_PRESS,
 
     PRESS_BUTTON_SLOW,
-    WAIT_PRESS,
     PRESSED,
 
-    PRESS_BUTTON_UNPRESS,
+    BUTTON_UNPRESS,
     WAIT_UNPRESS,
 
     UNPRESSED, // return to READY_to_PRESS after this unless otherwise needed
@@ -96,11 +95,20 @@ typedef struct MoveTask
     uint8_t button;
 
     unsigned long startTime_move_fwd_fast;
-    unsigned long startTime_press;
-    unsigned long startTime_unpress;
+
+    unsigned long startTime_press = 0;
+    unsigned long release_time = 0;
+    unsigned long time_unpress = 0;
 
 } MoveTask;
 
+// Drivers present or not for DC configuration
+typedef struct DRIVER_PRESET
+{
+    boolean AFMS_0_Present;
+    boolean AFMS_1_Present;
+    boolean AFMS_2_Present;
+} DRIVER_PRESENT;
 #if MOTOR_TYPE == DC
 #define DRIVER_0 0x60
 #define DRIVER_1 0x61
@@ -201,9 +209,11 @@ private:
     uint8_t _current_speed_percent;
     // Global variables to hold the state and timing information
     MoveTask task_BUTTON[11];
+    DRIVER_PRESET driver_present;
 
 public:
     DRIVER();
+    boolean scan_for_driver(uint8_t adress);
     void begin();
 
 #if MOTOR_TYPE == DC
@@ -214,6 +224,13 @@ public:
     void release(uint8_t button_index);
     void reset_position();
 
+    /**
+     * @brief
+     *
+     * @param BUTTON
+     * @attention needs to be called peridically. maybe inside main loop and needs to be unblocked and also for all of the buttons or atleast those in use by using for(int i = 0; i<=maxbuttons; i++){ACUTATOR_CYCLE(i);}
+     */
+    void ACUTATOR_cycle(uint8_t button);
     void move_close(uint8_t button);
     void press_button(uint8_t button);
 

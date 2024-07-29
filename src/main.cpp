@@ -13,19 +13,36 @@ void setup()
 {
   setCpuFrequencyMhz(240);
   Wire.begin();
+  delayMicroseconds(1);
   uart2.init();
+  delayMicroseconds(1);
   Serial.begin(9600);
-  button.begin_interruption();
+
+  delayMicroseconds(1);
+
   driver.begin();
+  Serial.println("here *************");
 
   display.begin();
   display.setcursor(0, 0);
   display.clear();
+  display.print("123");
   Serial.print("setup");
 
-  driver.reset_position(); // must be after chosing the device.
+  delayMicroseconds(1);
+  button.begin_interruption();
+  delayMicroseconds(1);
+
+  driver.move_close(0); // ! just to test the program needs to be removed in the main program.
+  unsigned long startTime = millis();
+  while (millis() - startTime < 2000)
+  {
+    driver.ACUTATOR_cycle(0);
+  }
 }
 
+unsigned long previousMillis = 0;
+const long interval = 5000; // interval in milliseconds
 void loop()
 {
 
@@ -43,13 +60,21 @@ void loop()
 // !  ******************************************** TEST PROGRAM HERE **********************************************
 #if TEST_ALLOW
 
-  driver.move_close(0); // Example button ID 1
+  driver.ACUTATOR_cycle(0);
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= interval)
+  {
+    previousMillis = currentMillis;
+    Serial.print("------------------------pressed");
+    driver.press_button(0); // Call press_button function every 3 seconds
+  }
 
 #endif
 
   // !  ******************************************** TEST PROGRAM HERE **********************************************
 
-  //* ******************************************** MAIN CODE ******************************************************
+  // * ******************************************** MAIN CODE ******************************************************
 #if MAIN_ALLOW
 
   button.update();
@@ -91,7 +116,7 @@ void loop()
   }
   test.CYCLE();
 #endif
-  //* ******************************************** MAIN CODE ******************************************************
+  // * ******************************************** MAIN CODE ******************************************************
 
 #if debug_loop_timing & debug
   debugEndTime(Loop_time);
