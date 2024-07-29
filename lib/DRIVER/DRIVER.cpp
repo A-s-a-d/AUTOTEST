@@ -327,7 +327,6 @@ void DRIVER::press_button(uint8_t button)
 
 void DRIVER::ACUTATOR_cycle(uint8_t button)
 {
-    Serial.println(task_BUTTON[button].current_state);
     switch (task_BUTTON[button].current_state)
     {
         //* ***************************************************************** case POS_0_IDLE ************************************************
@@ -359,7 +358,6 @@ void DRIVER::ACUTATOR_cycle(uint8_t button)
 
         //* ***************************************************************** case READY_TO_PRESS ************************************************
     case READY_TO_PRESS:
-        Serial.println("here----------");
         break;
         //* ***************************************************************** case PRESS_BUTTON_SLOW ************************************************
     case PRESS_BUTTON_SLOW:

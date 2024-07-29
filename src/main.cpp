@@ -66,7 +66,6 @@ void loop()
   if (currentMillis - previousMillis >= interval)
   {
     previousMillis = currentMillis;
-    Serial.print("------------------------pressed");
     driver.press_button(0); // Call press_button function every 3 seconds
   }
 
