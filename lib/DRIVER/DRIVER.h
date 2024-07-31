@@ -49,9 +49,10 @@
 
 #define DC 0
 #define STEPPER 1
-#define MOTOR_TYPE DC
+#define MOTOR_TYPE DC // Define motor type DC = 0; STEPPER = 1
 #define un_used_port 0XFF
 
+// Index buttons
 typedef enum BUTTON_INDEX
 {
     INDEX_PRIM_DUO_ON_OFF,
@@ -71,71 +72,76 @@ typedef enum BUTTON_INDEX
 enum BUTTON_STATE
 {
 
-    POS_0_IDLE,
+    POS_0_IDLE, // Actuator at init position
 
-    MOVE_FWD_CLOSE,
-    MOVE_CLOSE_DONE,
+    MOVE_FWD_CLOSE,  // Move Actuator close to button
+    MOVE_CLOSE_DONE, // Actuator is close to button (release function) and set slower speed (setspeed(50 /* % */))
 
-    READY_TO_PRESS,
+    READY_TO_PRESS, // Waiting to receive press command
 
-    PRESS_BUTTON_SLOW,
-    PRESSED,
+    PRESS_BUTTON_SLOW, // Move actuator forward to press button, Actuator is pressing button.
+    PRESSED,           // Bbutton has been pressed so release(idx) to stop pressing
 
-    BUTTON_UNPRESS,
-    WAIT_UNPRESS,
+    BUTTON_UNPRESS, // start moving bwd to return to ready_to_press position
+    WAIT_UNPRESS,   // wait for accutator to return to ready_to_press position
 
-    UNPRESSED, // return to READY_to_PRESS after this unless otherwise needed
+    UNPRESSED, // the actuator has returned to READY_TO_PRESS position
 
+    /**
+     * @brief
+     * TODO Reset the acutators to position 0, we can go to this condition to reset the positions of actuators.
+     *  `reset_position()` that is already written can be called to do this.
+     */
     RETURN_POS_0
 };
 
-typedef struct MoveTask
+typedef struct MoveTask // a struct that will keep trace of different parameters of buttons
 {
-    uint8_t current_state;
-    uint8_t button;
+    uint8_t current_state; // stores the current state of button
+    uint8_t button;        // stores the index of button
 
-    unsigned long startTime_move_fwd_fast;
+    unsigned long startTime_move_fwd_fast; // variable to store the time for moving closer to the buttons.  : MOVE_FWD_CLOSE
 
-    unsigned long startTime_press = 0;
-    unsigned long release_time = 0;
-    unsigned long time_unpress = 0;
+    unsigned long startTime_press = 0; // variable to store the time for pressing the buttons. : PRESS_BUTTON_SLOW
+    unsigned long releaseTime = 0;     // variable to store the time for release of the buttons. : PRESSED
+    unsigned long unpressTime = 0;     // variable to store the time forun pressiing of the buttons. : BUTTON_UNPRESS, WAIT_UNPRESS
 
 } MoveTask;
 
-// Drivers present or not for DC configuration
-typedef struct DRIVER_PRESET
+// Drivers (AdaFruit Motor Shield) present or not for DC configuration
+typedef struct DRIVER_PRESENT
 {
     boolean AFMS_0_Present;
     boolean AFMS_1_Present;
     boolean AFMS_2_Present;
 } DRIVER_PRESENT;
-#if MOTOR_TYPE == DC
-#define DRIVER_0 0x60
-#define DRIVER_1 0x61
-#define DRIVER_2 0x62
 
+#if MOTOR_TYPE == DC
+// 4 actuators per driver -> up to 12 actuators
+
+#define DRIVER_0 0x60 // I2C adress of driver 0
+#define DRIVER_1 0x61 // I2C adress of driver 1
+#define DRIVER_2 0x62 // I2C adress of driver 2
+
+// port numbers of driver 0 associated with button
 #define PORT_PRIM_DUO_ON_OFF 1
 #define PORT_PRIM_DUO_SET 2
 #define PORT_PRIM_DUO_CAL 3
 #define PORT_PROPILOT_MENU_ESC 4
 
+// port numbers of driver 1 associated with button
 #define PORT_PROPILOT_SET 1
 #define PORT_PROPILOT_UP 2
 #define PORT_PROPILOT_DOWN 3
 #define PORT_PROPILOT_CAL_OK 4
 
+// port numbers of driver 2 associated with button
 #define PORT_DUO_ON_OFF_2 1
 #define PORT_DUO_SET_2 2
 #define PORT_DUO_CAL_2 3
 
-//! We need 20% max duty cycle for PQ12-S model of accutator so 20% of 255 is 51.
-const uint8_t speed = 20; // @param  speed The 8-bit PWM value, 0 is off, 255 is on
-
-//  speed The 16-bit/12bit-real PWM value, 0 is off, 4095 is on full
-//! We need 20% max duty cycle for PQ12-S model of accutator so 20% of 4095 is 819.
-const uint16_t speed_fine = 800;
-
 #elif MOTOR_TYPE == STEPPER
+// 2 actuators per driver -> up to 12 actuators
 // TODO if STEPPER MOTOR IS USED
 #define DRIVER_0 0x60
 #define DRIVER_1 0x61
@@ -166,11 +172,13 @@ class DRIVER
 {
 private:
 #if MOTOR_TYPE == DC
-    // Motor shield instances
+
+    // Motor driver shield/module instances
     Adafruit_MotorShield AFMS_0;
     Adafruit_MotorShield AFMS_1;
     Adafruit_MotorShield AFMS_2;
 
+    // Motor driver port/acutators/buttons instances
     Adafruit_DCMotor *MOTOR_PRIM_DUO_ON_OFF;
     Adafruit_DCMotor *MOTOR_PRIM_DUO_SET;
     Adafruit_DCMotor *MOTOR_PRIM_DUO_CAL;
@@ -184,7 +192,7 @@ private:
     Adafruit_DCMotor *MOTOR_DUO_CAL_2;
 
 #elif MOTOR_TYPE == STEPPER
-
+    // Do not use this class, not compatible cause of delays
     Adafruit_MotorShield AFMS_0;
     Adafruit_MotorShield AFMS_1;
     Adafruit_MotorShield AFMS_2;
@@ -206,32 +214,82 @@ private:
 
 #endif
 
-    uint8_t _current_speed_percent;
-    // Global variables to hold the state and timing information
-    MoveTask task_BUTTON[11];
-    DRIVER_PRESET driver_present;
+    uint8_t _current_speed_percent; // current speed of DC MOTOR
+
+    MoveTask task_BUTTON[11];      // private struct table to hold the state and timing information for each button, index_button enum can be used between [idx] to acess specific button.
+    DRIVER_PRESENT driver_present; // instance of struct to store the presence of driver.
 
 public:
-    DRIVER();
+    DRIVER(); // constructor
+
+    /**
+     * @brief  scan for given adresse
+     *
+     * @param adress adress to scan
+     * @return boolean returns true if driver present else false
+     */
     boolean scan_for_driver(uint8_t adress);
-    void begin();
+
+    void begin(); // initialisation of driver according to the configuration and drivers presence
 
 #if MOTOR_TYPE == DC
 
+    /**
+     * @brief sets the speed of the motors in percent or in PWM
+     * @param PWM_duty_cycle_percent between 0 and 100% if 0 no speed and if hundred max speed.
+     */
     void set_speed(uint8_t PWM_duty_cycle_percent);
+
+    /**
+     * @brief sends move foward command to a the acutator
+     * @param button_index to start moving acutator associated with it. BUTTON_INDEX enum needs to/ can be used here.
+     */
     void move_fwd(uint8_t button_index);
+
+    /**
+     * @brief sends move backward command to a button
+     * @param button_index to start moving acutator associated with it. BUTTON_INDEX enum needs to/ can be used here.
+     */
     void move_bwd(uint8_t button_index);
+
+    /**
+     * @brief relese the signal/ signal is 0V / 0% PWM.
+     * @param button_index
+     */
     void release(uint8_t button_index);
+
+    /**
+     * @brief resets the position to 0 of all acutators.
+     *@attention it's a `blocking` funtion and uses the `delay`, means you can't move on until you have finished the reset so `call this function with care`.
+     */
     void reset_position();
 
     /**
-     * @brief
+     * @brief the main cycle of ACUTATOR
      *
-     * @param BUTTON
-     * @attention needs to be called peridically. maybe inside main loop and needs to be unblocked and also for all of the buttons or atleast those in use by using for(int i = 0; i<=maxbuttons; i++){ACUTATOR_CYCLE(i);}
+     * TODO : call this function in `main()` for all of the buttons, ot atleast depending on the device selected, only the buttons that are being used.
+     * !  inside main loop and needs to be unblocked and also for all of the buttons or atleast those in use by using :
+     * ```for(int i = 0; i<= numbre_of_buttons_used; i++){ACUTATOR_CYCLE(i);} ```
+     * @attention needs to be called peridically.
+
+     *  @param BUTTON the button whose cycle needs to be updated
      */
     void ACUTATOR_cycle(uint8_t button);
+
+    /**
+     * @attention Can only be called if button is in position 0 and idle, after calling this function the cycle will wait at ready to press condition for the command to press.
+     * @brief By providing the index of button it will move the associated  closer to the button without pressing.
+     *
+     * @param button to move close.
+     */
     void move_close(uint8_t button);
+
+    /**
+     * @attention Can only be called if button is ready to press.
+     * @brief By providing the index of button it will press the button
+     *
+     * @param button to press.
+     */
     void press_button(uint8_t button);
 
 #elif MOTOR_TYPE == STEPPER
@@ -254,11 +312,6 @@ public:
     void move_bwd(uint16_t steps_speed);
 
 #endif
-
-    void move_closer();
-    void press_ONOFF();
-    void press_SET();
-    void press_CAL();
 };
 
 #endif // DRIVER_H

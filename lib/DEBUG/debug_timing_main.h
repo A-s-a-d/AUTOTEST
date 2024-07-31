@@ -1,18 +1,10 @@
 #ifndef DEBUG_TIMING_MAIN_H
 #define DEBUG_TIMING_MAIN_H
-#include "debug_variable.h"
+
 #include <Arduino.h>
 
-inline void debugStartTime(unsigned long &startLoop_time)
-{
-    startLoop_time = esp_timer_get_time();
-}
+void debugStartTime(unsigned long &startLoop_time);
 
-inline void debugEndTime(unsigned long &startLoop_time)
-{
-    unsigned long endLoop = esp_timer_get_time();
-    Serial.print(endLoop - startLoop_time);
-    Serial.println("us");
-}
+void debugEndTime(unsigned long &startLoop_time);
 
 #endif

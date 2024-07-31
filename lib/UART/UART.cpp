@@ -19,7 +19,7 @@ void UART_2::init()
 void UART_2::write(const char *test_str)
 {
     uart_write_bytes(UART_NUM, test_str, strlen(test_str));
-    delay(20);
+    delay(50);
     uart_write_bytes(UART_NUM, CR, strlen(CR));
 }
 

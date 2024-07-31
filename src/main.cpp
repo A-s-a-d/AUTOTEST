@@ -1,5 +1,6 @@
 #include "main.h"
-#include "DRIVER.h"
+
+// !   millis can be replaced by : esp_timer_get_time();
 
 BUTTON button;
 TEST test;
@@ -7,21 +8,19 @@ TEST test;
 UART_2 uart2;
 boolean reset = 1;
 CARTE_AFFICHEUR_H2_AYAC100811_2_I2C display;
-DRIVER driver;
 
 void setup()
 {
-  setCpuFrequencyMhz(240);
-  Wire.begin();
+  //* Init uC configuration
+  setCpuFrequencyMhz(240);      //  Init clock uC
+  Wire.begin(SDA, SCL, 100000); // Init I2C
   delayMicroseconds(1);
-  uart2.init();
+  uart2.init(); // Init UART2
   delayMicroseconds(1);
-  Serial.begin(9600);
+  Serial.begin(921600); // Init UART SERIAL MONITOR
 
-  delayMicroseconds(1);
-
-  driver.begin();
-  Serial.println("here *************");
+  //* Init driver and actuator
+  test.begin(); // initialisation de driver et acctionneur
 
   display.begin();
   display.setcursor(0, 0);
@@ -32,21 +31,12 @@ void setup()
   delayMicroseconds(1);
   button.begin_interruption();
   delayMicroseconds(1);
-
-  driver.move_close(0); // ! just to test the program needs to be removed in the main program.
-  unsigned long startTime = millis();
-  while (millis() - startTime < 2000)
-  {
-    driver.ACUTATOR_cycle(0);
-  }
 }
 
-unsigned long previousMillis = 0;
-const long interval = 5000; // interval in milliseconds
 void loop()
 {
 
-#define TEST_ALLOW 1
+#define TEST_ALLOW 0
 #if TEST_ALLOW
 #define MAIN_ALLOW 0
 #else
@@ -59,15 +49,6 @@ void loop()
 #endif
 // !  ******************************************** TEST PROGRAM HERE **********************************************
 #if TEST_ALLOW
-
-  driver.ACUTATOR_cycle(0);
-  unsigned long currentMillis = millis();
-
-  if (currentMillis - previousMillis >= interval)
-  {
-    previousMillis = currentMillis;
-    driver.press_button(0); // Call press_button function every 3 seconds
-  }
 
 #endif
 
@@ -113,7 +94,10 @@ void loop()
   {
     reset = 1;
   }
+
   test.CYCLE();
+  test.update_cycle();
+
 #endif
   // * ******************************************** MAIN CODE ******************************************************
 

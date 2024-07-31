@@ -30,8 +30,9 @@ boolean DRIVER::scan_for_driver(uint8_t adress)
 void DRIVER::begin()
 {
 #if MOTOR_TYPE == DC
+#define tries 5
 
-    for (uint8_t i = 0; !driver_present.AFMS_0_Present && (i <= 5); i++)
+    for (uint8_t i = 0; !driver_present.AFMS_0_Present && (i <= tries); i++)
     {
         MOTOR_PRIM_DUO_ON_OFF = AFMS_0.getMotor(PORT_PRIM_DUO_ON_OFF);
         MOTOR_PRIM_DUO_SET = AFMS_0.getMotor(PORT_PRIM_DUO_SET);
@@ -42,9 +43,13 @@ void DRIVER::begin()
             driver_present.AFMS_0_Present = true;
             AFMS_0.begin();
         }
+        else
+        {
+            driver_present.AFMS_0_Present = false;
+        }
     }
 
-    for (uint8_t i = 0, j = 0, k = 0; !driver_present.AFMS_1_Present && (i < 5); ++i)
+    for (uint8_t i = 0; !driver_present.AFMS_1_Present && (i < tries); ++i)
     {
         MOTOR_PROPILOT_SET = AFMS_1.getMotor(PORT_PROPILOT_SET);
         MOTOR_PROPILOT_UP = AFMS_1.getMotor(PORT_PROPILOT_UP);
@@ -55,9 +60,13 @@ void DRIVER::begin()
             driver_present.AFMS_1_Present = true;
             AFMS_1.begin();
         }
+        else
+        {
+            driver_present.AFMS_1_Present = false;
+        }
     }
 
-    for (uint8_t i = 0, j = 0, k = 0; !driver_present.AFMS_2_Present && (i < 5); ++i)
+    for (uint8_t i = 0; !driver_present.AFMS_2_Present && (i < tries); ++i)
     {
         MOTOR_DUO_ON_OFF_2 = AFMS_2.getMotor(PORT_DUO_ON_OFF_2);
         MOTOR_DUO_SET_2 = AFMS_2.getMotor(PORT_DUO_SET_2);
@@ -66,6 +75,10 @@ void DRIVER::begin()
         {
             driver_present.AFMS_2_Present = true;
             AFMS_2.begin();
+        }
+        else
+        {
+            driver_present.AFMS_2_Present = false;
         }
     }
 
@@ -119,19 +132,26 @@ void DRIVER::set_speed(uint8_t PWM_duty_cycle_percent)
 
         PWM = (PWM_duty_cycle_percent >= 100) ? 255 : static_cast<uint8_t>((static_cast<float>(PWM_duty_cycle_percent) / 100.0) * 255); // goes from percent to uint8
         _current_speed_percent = PWM;
-        MOTOR_PRIM_DUO_ON_OFF->setSpeed(PWM);
-
-        MOTOR_PRIM_DUO_SET->setSpeed(PWM);
-        MOTOR_PRIM_DUO_CAL->setSpeed(PWM);
-        // TODO uncomment when other drivers present.
-        // MOTOR_PROPILOT_MENU_ESC->setSpeed(PWM);
-        // MOTOR_PROPILOT_SET->setSpeed(PWM);
-        // MOTOR_PROPILOT_UP->setSpeed(PWM);
-        // MOTOR_PROPILOT_DOWN->setSpeed(PWM);
-        // MOTOR_PROPILOT_CAL_OK->setSpeed(PWM);
-        // MOTOR_DUO_ON_OFF_2->setSpeed(PWM);
-        // MOTOR_DUO_SET_2->setSpeed(PWM);
-        // MOTOR_DUO_CAL_2->setSpeed(PWM);
+        if (driver_present.AFMS_0_Present)
+        {
+            MOTOR_PRIM_DUO_ON_OFF->setSpeed(PWM);
+            MOTOR_PRIM_DUO_SET->setSpeed(PWM);
+            MOTOR_PRIM_DUO_CAL->setSpeed(PWM);
+            MOTOR_PROPILOT_MENU_ESC->setSpeed(PWM);
+        }
+        if (driver_present.AFMS_1_Present)
+        {
+            MOTOR_PROPILOT_SET->setSpeed(PWM);
+            MOTOR_PROPILOT_UP->setSpeed(PWM);
+            MOTOR_PROPILOT_DOWN->setSpeed(PWM);
+            MOTOR_PROPILOT_CAL_OK->setSpeed(PWM);
+        }
+        if (driver_present.AFMS_2_Present)
+        {
+            MOTOR_DUO_ON_OFF_2->setSpeed(PWM);
+            MOTOR_DUO_SET_2->setSpeed(PWM);
+            MOTOR_DUO_CAL_2->setSpeed(PWM);
+        }
     }
 }
 
@@ -340,7 +360,7 @@ void DRIVER::ACUTATOR_cycle(uint8_t button)
         move_fwd(button); // Ensure this function is non-blocking
 
         // Check elapsed time
-        if (millis() - startTime_move_fwd_fast >= 480 /* ms*/)
+        if (millis() - startTime_move_fwd_fast >= 450 /* ms*/)
         {
             Serial.println();
             release(button);
@@ -352,7 +372,7 @@ void DRIVER::ACUTATOR_cycle(uint8_t button)
 
         //* ***************************************************************** case MOVE_CLOSE_DONE ************************************************
     case MOVE_CLOSE_DONE:
-        set_speed(60);
+        set_speed(50);
         task_BUTTON[button].current_state = READY_TO_PRESS;
         break;
 
@@ -379,29 +399,29 @@ void DRIVER::ACUTATOR_cycle(uint8_t button)
         //* ***************************************************************** case PRESSED ************************************************
     case PRESSED:
 
-        if (task_BUTTON[button].release_time == 0)
+        if (task_BUTTON[button].releaseTime == 0)
         {
-            task_BUTTON[button].release_time = millis();
+            task_BUTTON[button].releaseTime = millis();
         }
-        if (millis() - task_BUTTON[button].release_time >= 200)
+        if (millis() - task_BUTTON[button].releaseTime >= 200)
         { // Press button 500ms
-            task_BUTTON[button].release_time = 0;
+            task_BUTTON[button].releaseTime = 0;
             task_BUTTON[button].current_state = BUTTON_UNPRESS;
         }
         break;
 
         //* ***************************************************************** case PRESS_BUTTON_UNPRESS ************************************************
     case BUTTON_UNPRESS:
-        if (task_BUTTON[button].time_unpress == 0)
+        if (task_BUTTON[button].unpressTime == 0)
         {
-            task_BUTTON[button].time_unpress = millis();
+            task_BUTTON[button].unpressTime = millis();
         }
         move_bwd(button);
 
         release(button);
-        if (millis() - task_BUTTON[button].time_unpress >= 30)
+        if (millis() - task_BUTTON[button].unpressTime >= 30)
         {
-            task_BUTTON[button].time_unpress = 0;
+            task_BUTTON[button].unpressTime = 0;
             release(button); // maybe doesent need to release to keep the force.
             task_BUTTON[button].current_state = UNPRESSED;
         }

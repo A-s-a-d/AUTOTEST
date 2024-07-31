@@ -3,8 +3,8 @@
 
 #include <Arduino.h>
 #include "UART.h"
-#include "P8.h"
-#include "PQ12.h"
+
+#include "DRIVER.h"
 
 #define PH_HIZ "H1"
 
@@ -16,6 +16,7 @@ public:
     {
         enum Num
         {
+            INIT,
             WAITING_FOR_CYCLE_TO_START,
             MOV_ACUTATORS,
             PH_7,
@@ -40,6 +41,8 @@ public:
         const uint8_t AR3 = 3;
     } MODE;
     TEST(/* args */);
+    void begin();
+    void update_cycle();
     void chose_mode();
     void CYCLE();
     void start_cycle();

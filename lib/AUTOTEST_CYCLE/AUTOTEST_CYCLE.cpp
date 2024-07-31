@@ -1,25 +1,55 @@
 #include "AUTOTEST_CYCLE.h"
 
-#define wait(x) delay(x)
-
+DRIVER driver;
+#define button_cal 1
 TEST::TEST(/* args */)
 {
+}
+
+void TEST::begin()
+{
+    driver.begin();
+}
+unsigned long previousMillis = 0;
+const long interval = 5000; // interval in milliseconds
+
+void TEST::update_cycle()
+{
+    driver.ACUTATOR_cycle(button_cal);
+    // CYCLE();
 }
 
 void TEST::chose_mode()
 {
 }
+#define delay_1s 1000
+
+unsigned long press_cal_time = 0;
+unsigned long previous_state_display = 0; // Stores the last time STATE.currentState was printed
+const long time_current_state_display = 100;
 
 void TEST::CYCLE()
 {
 
+    if (previous_state_display == 0)
+    {
+        previous_state_display = millis();
+    }
+
+    if (millis() - previous_state_display >= time_current_state_display)
+    {
+        Serial.print("state_test");
+        Serial.println(STATE.currentState);
+        previous_state_display = 0;
+    }
+
+    static unsigned long time = 0;
+    static uint8_t time_count = 0;
+    unsigned long startTime = millis();
+
     switch (STATE.currentState)
     {
-    case STATE::WAITING_FOR_CYCLE_TO_START:
-
-        static unsigned long time = 0;
-        static uint8_t time_count = 0;
-
+    case STATE::INIT:
         if (millis() - time >= 100)
         {
             time = millis();
@@ -31,11 +61,20 @@ void TEST::CYCLE()
             uart2.write("H0");
             time_count = 0; // Reset time_count for the next round
         }
+        STATE.currentState = STATE::WAITING_FOR_CYCLE_TO_START;
+
+        break;
+    case STATE::WAITING_FOR_CYCLE_TO_START:
+
         break;
 
     case STATE::MOV_ACUTATORS:
-        // acutator.move_closer
-        wait(1000);
+        driver.move_close(button_cal); // ! just to test the program needs to be removed in the main program.
+        while (millis() - startTime < 2000)
+        {
+            driver.ACUTATOR_cycle(button_cal);
+        } // takes 2sec.
+        Serial.println("moveclose");
         STATE.currentState = STATE::PH_7;
         break;
 
@@ -45,44 +84,89 @@ void TEST::CYCLE()
            Wait 100ms or just a little.
            Verify PH value by asking the Simulator
         */
+        if (press_cal_time == 0)
+        {
+            press_cal_time = millis();
+        }
         uart2.write("7");
-        wait(2000);
-        STATE.currentState = STATE::press_ON_OFF_BUTTON;
+        if (millis() - press_cal_time >= delay_1s)
+        {
+            press_cal_time = 0;
+            Serial.println("press");
+
+            STATE.currentState = STATE::press_ON_OFF_BUTTON;
+        }
+
         break;
 
     case STATE::press_ON_OFF_BUTTON:
         //  code for press_ON_OFF_BUTTON state
-        STATE.currentState = STATE::press_SET_BUTTON;
-        wait(3000);
+        if (press_cal_time == 0)
+        {
+            press_cal_time = millis();
+            driver.press_button(button_cal);
+        }
+        if (millis() - press_cal_time >= 2000)
+        {
+            press_cal_time = 0;
+            Serial.println("press");
+            STATE.currentState = STATE::press_SET_BUTTON;
+        }
         break;
 
     case STATE::press_SET_BUTTON:
         //  code for press_SET_BUTTON state
-        STATE.currentState = STATE::PH_10;
-        wait(3000);
+        if (press_cal_time == 0)
+        {
+            press_cal_time = millis();
+            driver.press_button(button_cal);
+        }
+
+        if (millis() - press_cal_time >= 2000)
+        {
+            press_cal_time = 0;
+            STATE.currentState = STATE::PH_10;
+        }
         break;
 
     case STATE::PH_10:
         //  code for PH_10 state
-        uart2.write(PH10);
-        wait(2000);
-        STATE.currentState = STATE::HIZ;
+        static boolean uart_data_sent = 0;
+        if (press_cal_time == 0)
+        {
+            press_cal_time = millis();
+            uart2.write("10");
+        }
+        // if (uart_data_sent == 0)
+        // {
+        //     if (uart_write_bytes(UART_NUM, "10", strlen("10")) == 2)
+        //     {
+        //         uart_write_bytes(UART_NUM, CR, strlen(CR));
+        //     }
+        // }
+
+        if (millis() - press_cal_time >= 2000)
+        {
+            press_cal_time = 0;
+            STATE.currentState = STATE::HIZ;
+        }
         break;
 
     case STATE::HIZ:
         //  code for HIZ state
-        uart2.write("H1");
-        wait(19000);
-        STATE.currentState = STATE::END_OF_CYCLE;
+        if (press_cal_time == 0)
+        {
+            press_cal_time = millis();
+            uart2.write("H1");
+        }
+        if (millis() - press_cal_time >= 25000)
+        {
+            press_cal_time = 0;
+            STATE.currentState = STATE::END_OF_CYCLE;
+        }
         break;
 
     case STATE::END_OF_CYCLE:
-        // Serial.print("END");
-        // wait(500);
-        // uart2.write("7");
-        // wait(100);
-        // uart2.write("H0");
-
         static unsigned long time_END = 0;
         static uint8_t time_END_count = 0;
 
@@ -97,7 +181,7 @@ void TEST::CYCLE()
             uart2.write("H0");
             time_count = 0; // Reset time_count for the next round
         }
-        STATE.currentState = STATE::WAITING_FOR_CYCLE_TO_START;
+        STATE.currentState = STATE::INIT;
         break;
 
     default:

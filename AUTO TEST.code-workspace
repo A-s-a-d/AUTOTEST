@@ -53,7 +53,10 @@
 			"stdexcept": "cpp",
 			"streambuf": "cpp",
 			"cinttypes": "cpp",
-			"typeinfo": "cpp"
+			"typeinfo": "cpp",
+			"esp_attr.h": "c",
+			"task.h": "c",
+			"sdkconfig.h": "c"
 		},
 		"cSpell.words": [
 			"AYAC"
